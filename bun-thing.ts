@@ -4,19 +4,19 @@ const pb = new PocketBase('http://127.0.0.1:8090');
 
 pb.autoCancellation(false);
 
+const readListFile = Bun.file("./ParsedReadList1.md");
 
-const readListFile = Bun.file("./ParsedReadListPart1.json"); // relative to cwd
+const readList = (await readListFile.text()).trim();
 
-const contents = JSON.parse(await readListFile.text()) as any[]
+type Book = {
+	title: string;
+	authors: string;
+}
 
-contents.forEach(async book => {
-	const data = {
-		"title": book.title,
-		"authors": book.authors ? book.authors : ""
-	};
+const books: Book[] = readList.split('\n').map((line: string) => ({ title: line.split(' | ')[0], authors: line.split(' | ')[1] }))
 
-	await pb.collection('BooksRaw').create(data);
 
+books.forEach(async book => {
+	await pb.collection('BooksRaw').create(book);
 })
-
 

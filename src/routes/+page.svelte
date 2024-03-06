@@ -1,28 +1,30 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-
 	export let data;
 
-	onMount(() => {
-		console.log(data)
+	const books = data.records;
+	const index = data.indexOld;
 
-	})
-	let searchString = '';
+	let titleString = books[index].title;
+	let authorString = books[index].authors;
 
-	let books: any[] = [];
+	let bookResults: any[] = [];
 
 	async function handleSubmit() {
-		const res = await fetch('https://www.googleapis.com/books/v1/volumes?q=flowers+inauthor:keyes');
+		const res = await fetch(
+			`https://www.googleapis.com/books/v1/volumes?q=${titleString.replaceAll(' ', '+')}+inauthor:${authorString}&printType=books`
+		);
 		const json = await res.json();
-		books = json.items;
-		books.forEach((book) => console.log(book.volumeInfo));
+		bookResults = json.items;
 	}
 </script>
 
 <main class="w-fit h-fit">
 	<div class="flex flex-col gap-4 items-center inset-x-0 mx-auto absolute">
 		<div class="w-fit h-fit mx-auto inset-x-0 pt-4">
-			<input type="text" bind:value={searchString} />
+			<div class="flex flex-col gap-2">
+				<input type="text" bind:value={titleString} placeholder="title" />
+				<input type="text" bind:value={authorString} placeholder="author" />
+			</div>
 			<button
 				class="w-fit h-fit p-2 bg-slate-700 hover:bg-slate-600 rounded-md"
 				type="submit"
@@ -31,9 +33,9 @@
 		</div>
 
 		<div class="flex flex-col gap-4">
-			{#each books as book, index}
+			{#each bookResults as book, i}
 				<form method="POST">
-					<input name="json" type="hidden" value={JSON.stringify(book)}>
+					<input name="json" type="hidden" value={JSON.stringify(book)} />
 					<div class="w-full h-full bg-slate-900 flex rounded-xl">
 						{#if book.volumeInfo.imageLinks !== undefined}
 							<img
@@ -47,11 +49,21 @@
 							</div>
 						{/if}
 						<div>
-							<h1 class="text-white">Title : {book.volumeInfo.title}</h1>
-							<h1 class="text-white">Subtitle : {book.volumeInfo?.subtitle}</h1>
+							<div class="w-fit h-fit content-center inset-x-0 mx-auto items-center flex flex-col">
+								<h1 class="text-white text-center font-bold w-fit">{book.volumeInfo.title}</h1>
+								<p class="text-gray-500 font-light w-fit text-center">
+									{book.volumeInfo?.subtitle}
+								</p>
+							</div>
+
+							<h1 class="text-white">Authors: {book.volumeInfo.authors.join(' , ')}</h1>
+
 							<h1 class="text-white">
 								Pages : {book.volumeInfo?.pageCount ? book.volumeInfo.pageCount : 'N/A'}
 							</h1>
+
+							<hr class="my-2" />
+
 							<h1 class="text-white">
 								Rating : {book.volumeInfo?.averageRating ? book.volumeInfo.averageRating : 'N/A'}
 							</h1>
@@ -60,7 +72,6 @@
 									? book.volumeInfo.ratingsCount
 									: 'N/A'}
 							</h1>
-							<h1 class="text-white">Authors: {book.volumeInfo.authors.join(' , ')}</h1>
 							<h1 class="text-white">
 								Categories: {book.volumeInfo.categories ? book.volumeInfo.categories : 'unkown'}
 							</h1>
